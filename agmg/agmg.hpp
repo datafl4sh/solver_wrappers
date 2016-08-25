@@ -29,7 +29,6 @@
 #pragma once
 
 #include <complex>
-//#include <stdexcept>
 
 #ifdef ENABLE_EIGEN
     #include <Eigen/Dense>
@@ -123,7 +122,7 @@ class agmg_solver
     double      m_agmg_tol;
     
 #ifndef AGMG_HAS_SOME_LIBRARY
-    static_assert(false, "AGMG wrapper hasn't any library to interface with."
+    static_assert(false, "AGMG wrapper does not have any library to interface with. "
                          "This might not be what you want...");
 #endif
     

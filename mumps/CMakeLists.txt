@@ -3,7 +3,7 @@ project (MUMPSLibs)
 
 set (CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g")
 
 find_package(Eigen3)
 if (EIGEN3_FOUND)
@@ -18,4 +18,4 @@ endif()
     
 
 add_executable(mumps_test "mumps_test.cpp")
-target_link_libraries(mumps_test ${MUMPS_LIBRARIES})
+target_link_libraries(mumps_test ${MUMPS_LIBRARIES} -lmpi -lmpi_mpifh -lblas)
