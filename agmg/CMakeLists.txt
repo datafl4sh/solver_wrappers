@@ -1,23 +1,11 @@
-cmake_minimum_required (VERSION 2.8)
-project (AGMGLibs)
+
 enable_language (Fortran)
 
-set (CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set (AGMG_SOURCE_DIR "${PROJECT_SOURCE_DIR}/agmg/agmg_source")
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
+if ( EXISTS "${AGMG_SOURCE_DIR}" AND IS_DIRECTORY "${AGMG_SOURCE_DIR}" )
 
-find_package(Eigen3)
-if (EIGEN3_FOUND)
-    include_directories(${EIGEN3_INCLUDE_DIR})
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_EIGEN")
-endif()
-    
-
-set (AGMG_SOURCE_DIR "${PROJECT_SOURCE_DIR}/agmg_source")
-
-if ( EXISTS "${AGMG_SOURCE_DIR}" AND IS_DIRECTORY "${AGMG_SOURCE_DIR}" ) 
-    
-    set (AGMG_FOUND TRUE PARENT_SCOPE)
+    set (HAVE_AGMG TRUE PARENT_SCOPE)
 
     get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
@@ -38,19 +26,19 @@ if ( EXISTS "${AGMG_SOURCE_DIR}" AND IS_DIRECTORY "${AGMG_SOURCE_DIR}" )
     add_library (zagmg SHARED ${ZAGMG_SOURCES} ${COMMON_SOURCES})
 
 	if ( CYGWIN )
-		set_target_properties (sagmg PROPERTIES LINK_FLAGS 
+		set_target_properties (sagmg PROPERTIES LINK_FLAGS
 			"-Wl,--version-script=\"${CMAKE_CURRENT_SOURCE_DIR}/libsagmg.version\"")
-		
-		set_target_properties (dagmg PROPERTIES LINK_FLAGS 
+
+		set_target_properties (dagmg PROPERTIES LINK_FLAGS
 			"-Wl,--version-script=\"${CMAKE_CURRENT_SOURCE_DIR}/libdagmg.version\"")
-							   
-		set_target_properties (cagmg PROPERTIES LINK_FLAGS 
+
+		set_target_properties (cagmg PROPERTIES LINK_FLAGS
 			"-Wl,--version-script=\"${CMAKE_CURRENT_SOURCE_DIR}/libcagmg.version\"")
-							   
-		set_target_properties (zagmg PROPERTIES LINK_FLAGS 
+
+		set_target_properties (zagmg PROPERTIES LINK_FLAGS
 			"-Wl,--version-script=\"${CMAKE_CURRENT_SOURCE_DIR}/libzagmg.version\"")
 	endif (CYGWIN)
-	
+
 	if ( APPLE )
 		set_target_properties (sagmg PROPERTIES LINK_FLAGS "-Wl,-exported_symbols_list \
                                \"${CMAKE_CURRENT_SOURCE_DIR}/sagmg_export.map\"")
@@ -72,10 +60,6 @@ if ( EXISTS "${AGMG_SOURCE_DIR}" AND IS_DIRECTORY "${AGMG_SOURCE_DIR}" )
 
     set(AGMG_LIBRARIES "${AGMG_LIBRARIES}" sagmg dagmg cagmg zagmg)
 
-    add_executable(agmg_test "agmg_test.cpp")
-    target_link_libraries(agmg_test ${AGMG_LIBRARIES})
-
-    
-    
+    set(SOLVER_WRAPPERS_LIBRARIES ${SOLVER_WRAPPERS_LIBRARIES} ${AGMG_LIBRARIES} PARENT_SCOPE)
 
 endif ()

@@ -28,6 +28,10 @@
 
 #pragma once
 
+#include "config.h"
+
+#ifdef HAVE_AGMG
+
 #include <complex>
 
 #ifdef ENABLE_EIGEN
@@ -40,7 +44,7 @@
     #include <armadillo>
     #define AGMG_HAS_SOME_LIBRARY
 #endif
-    
+
 #define CALL_FORTRAN(function) function##_
 
 namespace agmg_priv {
@@ -71,7 +75,7 @@ template<typename T>
 void
     call_agmg(int& N, T *a, int *ja, int *ia, T *f, T *x,
               int& ijob, int& iprint, int& nrest, int& iter, double& tol);
-    
+
 template<>
 void
 call_agmg<float>(int& N, float *a, int *ja, int *ia, float *f, float *x,
@@ -87,7 +91,7 @@ call_agmg<double>(int& N, double *a, int *ja, int *ia, double *f, double *x,
 {
     CALL_FORTRAN(dagmg)(N, a, ja, ia, f, x, ijob, iprint, nrest, iter, tol);
 }
-  
+
 template<>
 void
 call_agmg<std::complex<float>>(int& N, std::complex<float> *a, int *ja,
@@ -107,7 +111,7 @@ call_agmg<std::complex<double>>(int& N, std::complex<double> *a, int *ja,
 {
     CALL_FORTRAN(zagmg)(N, a, ja, ia, f, x, ijob, iprint, nrest, iter, tol);
 }
-    
+
 } // namespace agmg_priv
 
 
@@ -120,34 +124,34 @@ class agmg_solver
     int         m_agmg_nrest;
     int         m_agmg_iter;
     double      m_agmg_tol;
-    
+
 #ifndef AGMG_HAS_SOME_LIBRARY
     static_assert(false, "AGMG wrapper does not have any library to interface with. "
                          "This might not be what you want...");
 #endif
-    
+
 public:
     agmg_solver()
         : m_agmg_ijob(0), m_agmg_iprint(6), m_agmg_nrest(1),
           m_agmg_iter(50), m_agmg_tol(1e-8)
     {}
-    
+
     void ijob(int val) {
         m_agmg_ijob = val;
     }
-    
+
     int ijob(void) const {
         return m_agmg_ijob;
     }
-    
+
     void iprint(int val) {
         m_agmg_iprint = val;
     }
-    
+
     int iprint(void) const {
         return m_agmg_iprint;
     }
-    
+
 #ifdef ENABLE_EIGEN
     template<int _Options, typename _Index>
     Eigen::Matrix<T, 1, Eigen::Dynamic>
@@ -156,9 +160,9 @@ public:
     {
         if ( A.rows() != A.cols() )
             throw std::invalid_argument("Only square matrices");
-        
+
         A.makeCompressed();
-        
+
         int     N       = A.rows();
         T *     data    = A.valuePtr();
         int *   ia      = A.outerIndexPtr();
@@ -166,50 +170,50 @@ public:
         int *   ja      = A.innerIndexPtr();
         int     is      = A.innerSize();
         T *     f       = b.data();
-        
+
         /* Convert to one-based */
         for (size_t i = 0; i < is+1; i++)
             ia[i] += 1;
-        
+
         for (size_t i = 0; i < js; i++)
             ja[i] += 1;
-        
+
         assert(data != nullptr);
         assert(ia != nullptr);
         assert(ja != nullptr);
-        
+
         Eigen::Matrix<T, Eigen::Dynamic, 1> ret;
         ret.resize(N);
         T * x = ret.data();
-        
+
         if (_Options == Eigen::ColMajor)
         {
             // User asked to use the transpose, but backend is CSC: don't ask
             // AGMG to compute with the transpose.
             if (m_agmg_ijob > 100)
                 m_agmg_ijob -= 100;
-            
+
             // User did not ask to use the transpose, but backend is CSC: ask
             // AGMG to NOT compute with the transpose.
             if (m_agmg_ijob < 100)
                 m_agmg_ijob += 100;
         }
-        
+
         agmg_priv::call_agmg<T>(N, data, ja, ia, f, x, m_agmg_ijob, m_agmg_iprint,
                                 m_agmg_nrest, m_agmg_iter, m_agmg_tol);
-        
+
         /* Convert back to zero-based */
         for (size_t i = 0; i < is+1; i++)
             ia[i] -= 1;
-        
+
         for (size_t i = 0; i < js; i++)
             ja[i] -= 1;
-        
+
         return ret;
     }
-    
+
 #endif
-    
+
 #ifdef ENABLE_ARMADILLO
     template<typename T>
     arma::Col<T>
@@ -217,14 +221,14 @@ public:
     {
         if ( A.n_rows != A.n_cols )
             throw std::invalid_argument("Only square matrices");
-        
+
         if (_Options == Eigen::ColMajor)
         {
             // User asked to use the transpose, but backend is CSC: don't ask
             // AGMG to compute with the transpose.
             if (m_agmg_ijob > 100)
                 m_agmg_ijob -= 100;
-            
+
             // User did not ask to use the transpose, but backend is CSC: ask
             // AGMG to NOT compute with the transpose.
             if (m_agmg_ijob < 100)
@@ -235,6 +239,4 @@ public:
 
 };
 
-
-
-
+#endif /* HAVE_AGMG */

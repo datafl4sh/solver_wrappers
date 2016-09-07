@@ -28,6 +28,10 @@
 
 #pragma once
 
+#include "config.h"
+
+#ifdef HAVE_MUMPS
+
 #include <complex>
 
 #include <smumps_c.h>
@@ -47,7 +51,7 @@
 #endif
 
 namespace mumps_priv {
-    
+
 template<typename T>
 struct mumps_types;
 
@@ -81,7 +85,7 @@ mumps_cast_from(From *from)
 {
     return reinterpret_cast<typename mumps_types<From>::mumps_elem_t *>(from);
 }
-    
+
 template<typename T>
 void
 call_mumps(T *);
@@ -119,16 +123,16 @@ call_mumps(typename mumps_types<std::complex<double>>::MUMPS_STRUC_C *id)
 template<typename T>
 class mumps_solver
 {
-    
+
 #ifndef MUMPS_HAS_SOME_LIBRARY
     static_assert(false, "MUMPS wrapper does not have any library to interface with. "
                          "This might not be what you want...");
 #endif
-    
+
 public:
     mumps_solver()
     {}
-    
+
 #ifdef ENABLE_EIGEN
     template<int _Options, typename _Index>
     Eigen::Matrix<T, 1, Eigen::Dynamic>
@@ -137,36 +141,36 @@ public:
     {
         if ( A.rows() != A.cols() )
             throw std::invalid_argument("Only square matrices");
-        
+
         A.makeCompressed();
-        
+
         int     N       = A.rows();
         T *     data    = A.valuePtr();
         int *   ia      = A.outerIndexPtr();
         int     js      = A.nonZeros();
         int *   ja      = A.innerIndexPtr();
         int     is      = A.innerSize();
-        
+
         std::vector<int>    ii( A.nonZeros() );
-        
+
         size_t vpos = 0;
         for (int i = 0; i < is; i++)
         {
             int begin = ia[i];
             int end = ia[i+1];
-            
+
             for (size_t j = begin; j < end; j++)
                 ii[j] = i+1;
         }
-        
+
         for (size_t i = 0; i < js; i++)
             ja[i] += 1;
-        
+
         Eigen::Matrix<T, Eigen::Dynamic, 1> ret = b;
         T * x = ret.data();
-        
+
         typename mumps_priv::mumps_types<T>::MUMPS_STRUC_C   id;
-        
+
         id.job = -1;
         id.par = 1;
         id.sym = 0;
@@ -175,33 +179,33 @@ public:
                                     to inform the mumps code to use the
                                     MPI communicator MPI_COMM_WORLD
                                     */
-        
+
         mumps_priv::call_mumps(&id);
-        
+
         id.a = mumps_priv::mumps_cast_from<T>(data);
         id.irn = ii.data();
         id.jcn = ja;
         id.n = A.rows();
         id.nz = A.nonZeros();
         id.rhs = mumps_priv::mumps_cast_from<T>(ret.data());
-        
-        
+
+
         id.icntl[0]=-1; id.icntl[1]=-1; id.icntl[2]=-1; id.icntl[3]=0;
-        
+
         id.job = 6;
         mumps_priv::call_mumps(&id);
-        
+
         id.job = -2;
         mumps_priv::call_mumps(&id);
-        
+
         for (size_t i = 0; i < js; i++)
             ja[i] -= 1;
-        
+
         return ret;
     }
-    
+
 #endif
-    
+
 };
 
-
+#endif /* HAVE_MUMPS */
