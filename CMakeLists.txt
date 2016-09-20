@@ -16,9 +16,9 @@ add_subdirectory(mumps)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/config.h.in"
-  "${PROJECT_BINARY_DIR}/_config_/config.h"
+  "${PROJECT_SOURCE_DIR}/config.h"
   )
-include_directories("${PROJECT_BINARY_DIR}/_config_/")
+include_directories("${PROJECT_SOURCE_DIR}")
 
 
 add_subdirectory(tests)
