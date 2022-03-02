@@ -1,24 +1,31 @@
-cmake_minimum_required (VERSION 2.8)
-project (solver_wrappers)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+project("solver_wrappers")
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set (CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+add_subdirectory(iface_agmg)
+add_subdirectory(iface_mumps)
 
-find_package(Eigen3)
-if (EIGEN3_FOUND)
-    include_directories(${EIGEN3_INCLUDE_DIR})
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_EIGEN")
+
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+option(OPT_BUILD_AGMG_TEST "Build AGMG interface test" OFF)
+if (OPT_BUILD_AGMG_TEST)
+    find_package(Eigen3 REQUIRED)
+    add_executable(test_agmg tests/test_agmg.cpp)
+    target_link_libraries(test_agmg AGMG Eigen3::Eigen)
+    install(TARGETS test_agmg DESTINATION bin)
 endif()
 
-add_subdirectory(agmg)
-add_subdirectory(mumps)
+option(OPT_BUILD_MUMPS_TEST "Build MUMPS interface test" OFF)
+if (OPT_BUILD_MUMPS_TEST)
+    find_package(Eigen3 REQUIRED)
+    add_executable(test_mumps tests/test_mumps.cpp)
+    target_link_libraries(test_mumps MUMPS Eigen3::Eigen)
+    install(TARGETS test_mumps DESTINATION bin)
+endif()
 
-configure_file (
-  "${PROJECT_SOURCE_DIR}/config.h.in"
-  "${PROJECT_SOURCE_DIR}/config.h"
-  )
-include_directories("${PROJECT_SOURCE_DIR}")
-
-
-add_subdirectory(tests)

@@ -1,4 +1,13 @@
 /*
+ * DISK++, a template library for DIscontinuous SKeletal methods.
+ *  
+ * Matteo Cicuttin (C) 2020-2022
+ * matteo.cicuttin@uliege.be
+ *
+ * University of Liège - Montefiore Institute
+ * Applied and Computational Electromagnetics group  
+ */
+/*
  * Copyright (C) 2013-2016, Matteo Cicuttin - matteo.cicuttin@uniud.it
  * Department of Electrical Engineering, University of Udine
  * All rights reserved.
@@ -28,22 +37,9 @@
 
 #pragma once
 
-#include "config.h"
-
 #ifdef HAVE_AGMG
 
 #include <complex>
-
-#ifdef ENABLE_EIGEN
-    #include <Eigen/Dense>
-    #include <Eigen/Sparse>
-    #define AGMG_HAS_SOME_LIBRARY
-#endif
-
-#ifdef ENABLE_ARMADILLO
-    #include <armadillo>
-    #define AGMG_HAS_SOME_LIBRARY
-#endif
 
 #define CALL_FORTRAN(function) function##_
 
@@ -73,8 +69,8 @@ extern "C" void CALL_FORTRAN(zagmg)(int&, std::complex<double> *, int *, int *,
 
 template<typename T>
 void
-    call_agmg(int& N, T *a, int *ja, int *ia, T *f, T *x,
-              int& ijob, int& iprint, int& nrest, int& iter, double& tol);
+call_agmg(int& N, T *a, int *ja, int *ia, T *f, T *x,
+          int& ijob, int& iprint, int& nrest, int& iter, double& tol);
 
 template<>
 void
@@ -114,8 +110,6 @@ call_agmg<std::complex<double>>(int& N, std::complex<double> *a, int *ja,
 
 } // namespace agmg_priv
 
-
-
 template<typename T>
 class agmg_solver
 {
@@ -124,11 +118,6 @@ class agmg_solver
     int         m_agmg_nrest;
     int         m_agmg_iter;
     double      m_agmg_tol;
-
-#ifndef AGMG_HAS_SOME_LIBRARY
-    static_assert(false, "AGMG wrapper does not have any library to interface with. "
-                         "This might not be what you want...");
-#endif
 
 public:
     agmg_solver()
@@ -152,7 +141,6 @@ public:
         return m_agmg_iprint;
     }
 
-#ifdef ENABLE_EIGEN
     template<int _Options, typename _Index>
     Eigen::Matrix<T, 1, Eigen::Dynamic>
     solve(Eigen::SparseMatrix<T, _Options, _Index>& A,
@@ -211,32 +199,6 @@ public:
 
         return ret;
     }
-
-#endif
-
-#ifdef ENABLE_ARMADILLO
-    template<typename T>
-    arma::Col<T>
-    solve(arma::SpMat<T>& A, arma::Col<T>& b)
-    {
-        if ( A.n_rows != A.n_cols )
-            throw std::invalid_argument("Only square matrices");
-
-        if (_Options == Eigen::ColMajor)
-        {
-            // User asked to use the transpose, but backend is CSC: don't ask
-            // AGMG to compute with the transpose.
-            if (m_agmg_ijob > 100)
-                m_agmg_ijob -= 100;
-
-            // User did not ask to use the transpose, but backend is CSC: ask
-            // AGMG to NOT compute with the transpose.
-            if (m_agmg_ijob < 100)
-                m_agmg_ijob += 100;
-        }
-    }
-#endif
-
 };
 
 #endif /* HAVE_AGMG */
