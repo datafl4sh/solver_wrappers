@@ -40,19 +40,19 @@
 #ifdef HAVE_MUMPS
 #include <complex>
 
-#ifdef HAVE_SMUMPS
+#ifdef HAVE_MUMPSS
 #include <smumps_c.h>
 #endif
 
-#ifdef HAVE_DMUMPS
+#ifdef HAVE_MUMPSD
 #include <dmumps_c.h>
 #endif
 
-#ifdef HAVE_CMUMPS
+#ifdef HAVE_MUMPSC
 #include <cmumps_c.h>
 #endif
 
-#ifdef HAVE_ZMUMPS
+#ifdef HAVE_MUMPSZ
 #include <zmumps_c.h>
 #endif
 
@@ -81,7 +81,7 @@ namespace mumps_priv {
 template<typename T>
 struct mumps_types;
 
-#ifdef HAVE_SMUMPS
+#ifdef HAVE_MUMPSS
 template<>
 struct mumps_types<float> {
     typedef SMUMPS_STRUC_C          MUMPS_STRUC_C;
@@ -95,7 +95,7 @@ call_mumps(typename mumps_types<float>::MUMPS_STRUC_C *id)
 }
 #endif
 
-#ifdef HAVE_DMUMPS
+#ifdef HAVE_MUMPSD
 template<>
 struct mumps_types<double> {
     typedef DMUMPS_STRUC_C          MUMPS_STRUC_C;
@@ -109,7 +109,7 @@ call_mumps(typename mumps_types<double>::MUMPS_STRUC_C *id)
 }
 #endif
 
-#ifdef HAVE_CMUMPS
+#ifdef HAVE_MUMPSC
 template<>
 struct mumps_types<std::complex<float>> {
     typedef CMUMPS_STRUC_C          MUMPS_STRUC_C;
@@ -123,7 +123,7 @@ call_mumps(typename mumps_types<std::complex<float>>::MUMPS_STRUC_C *id)
 }
 #endif
 
-#ifdef HAVE_ZMUMPS
+#ifdef HAVE_MUMPSZ
 template<>
 struct mumps_types<std::complex<double>> {
     typedef ZMUMPS_STRUC_C          MUMPS_STRUC_C;

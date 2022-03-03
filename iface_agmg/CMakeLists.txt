@@ -1,10 +1,12 @@
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-project("agmg" LANGUAGES Fortran)
+set (AGMG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/agmg_source")
+set (AGMG_LDSCRIPT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ldscripts")
 
-set (AGMG_SOURCE_DIR "${PROJECT_SOURCE_DIR}/agmg_source")
-set (AGMG_LDSCRIPT_DIR "${PROJECT_SOURCE_DIR}/ldscripts")
+add_library(AGMG INTERFACE)
+target_include_directories(AGMG INTERFACE include)
 
-if ( EXISTS "${AGMG_SOURCE_DIR}" AND IS_DIRECTORY "${AGMG_SOURCE_DIR}" )
+option(OPT_BUILD_AGMG_WRAPPER "Build AGMG Eigen wrapper." ON)
+if ( EXISTS "${AGMG_SOURCE_DIR}" AND IS_DIRECTORY "${AGMG_SOURCE_DIR}" AND OPT_BUILD_AGMG_WRAPPER)
+    enable_language(Fortran)
     get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
     if (Fortran_COMPILER_NAME MATCHES "gfortran.*")
@@ -56,13 +58,12 @@ if ( EXISTS "${AGMG_SOURCE_DIR}" AND IS_DIRECTORY "${AGMG_SOURCE_DIR}" )
                                \"${AGMG_LDSCRIPT_DIR}/libzagmg.map\"")
     endif()
 
-    add_library(AGMG INTERFACE)
-    target_include_directories(AGMG INTERFACE include)
     target_link_libraries(AGMG INTERFACE sagmg dagmg cagmg zagmg)
     target_compile_definitions(AGMG INTERFACE -DHAVE_AGMG)
+    set(HAVE_AGMG TRUE PARENT_SCOPE)
 
     install(TARGETS sagmg dagmg cagmg zagmg DESTINATION lib)
-    message(STATUS "AGMG Interface available")
+    message(STATUS "Solver wrappers: AGMG Interface available")
 endif()
 
 install(FILES "include/agmg.hpp" DESTINATION include)
