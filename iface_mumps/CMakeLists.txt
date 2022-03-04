@@ -38,7 +38,7 @@ endif()
 ## Libraries common to all MUMPS versions
 find_library(MUMPS_COMMON_LIBRARIES
     NAMES ${MUMPS_COMMON_NAMES}
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES lib lib64)
 if(MUMPS_COMMON_LIBRARIES)
   list(APPEND MUMPS_LIBRARIES ${MUMPS_COMMON_LIBRARIES})
@@ -49,7 +49,7 @@ endif()
 if(${MUMPS_SEQUENTIAL_OR_PARALLEL} STREQUAL "Sequential")
     find_library(MUMPS_MPISEQ_LIBRARY
         NAMES mpiseq
-        HINTS ENV MUMPS_ROOT
+        HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
         PATH_SUFFIXES lib lib64)
     if(MUMPS_MPISEQ_LIBRARY)
         message(STATUS "MUMPS mpiseq found.")
@@ -63,7 +63,7 @@ set(extras_libs ptscotch scotch metis pord pord_seq)
 foreach(extra IN LISTS extras_libs)
     find_library(MUMPS_${extra}_LIBRARY
         NAMES ${extra}
-        HINTS ENV MUMPS_ROOT
+        HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
         PATH_SUFFIXES lib lib64)
     if(MUMPS_${extra}_LIBRARY)
         message(STATUS "MUMPS extra: " ${extra})
@@ -75,13 +75,13 @@ endforeach()
 ## Real single precision MUMPS
 find_path(MUMPSS_INCLUDE_DIR
     NAMES smumps_c.h
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES include
   )
 
 find_library(MUMPSS_LIBRARIES
     NAMES ${MUMPSS_NAMES}
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES lib lib64)
 
 find_package_handle_standard_args(MUMPSS DEFAULT_MSG MUMPSS_LIBRARIES MUMPSS_INCLUDE_DIR)
@@ -98,13 +98,13 @@ endif()
 ## Real double precision MUMPS
 find_path(MUMPSD_INCLUDE_DIR
     NAMES dmumps_c.h
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES include
   )
 
 find_library(MUMPSD_LIBRARIES
     NAMES ${MUMPSD_NAMES}
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES lib lib64)
 
 find_package_handle_standard_args(MUMPSD DEFAULT_MSG MUMPSD_LIBRARIES MUMPSD_INCLUDE_DIR)
@@ -121,13 +121,13 @@ endif()
 ## Complex single precision MUMPS
 find_path(MUMPSC_INCLUDE_DIR
     NAMES cmumps_c.h
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES include
   )
 
 find_library(MUMPSC_LIBRARIES
     NAMES ${MUMPSC_NAMES}
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES lib lib64)
 
 find_package_handle_standard_args(MUMPSC DEFAULT_MSG MUMPSC_LIBRARIES MUMPSC_INCLUDE_DIR)
@@ -144,13 +144,13 @@ endif()
 ## Complex double precision MUMPS
 find_path(MUMPSZ_INCLUDE_DIR
     NAMES zmumps_c.h
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES include
   )
 
 find_library(MUMPSZ_LIBRARIES
     NAMES ${MUMPSZ_NAMES}
-    HINTS ENV MUMPS_ROOT
+    HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES lib lib64)
 
 find_package_handle_standard_args(MUMPSZ DEFAULT_MSG MUMPSZ_LIBRARIES MUMPSZ_INCLUDE_DIR)
