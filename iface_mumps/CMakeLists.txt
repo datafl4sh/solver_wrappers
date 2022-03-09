@@ -41,7 +41,7 @@ find_library(MUMPS_COMMON_LIBRARIES
     HINTS ENV MUMPS_ROOT ${MUMPS_ROOT}
     PATH_SUFFIXES lib lib64)
 if(MUMPS_COMMON_LIBRARIES)
-  list(APPEND MUMPS_LIBRARIES ${MUMPS_COMMON_LIBRARIES})
+  list(APPEND MUMPS_LIBRARIES "${MUMPS_COMMON_LIBRARIES}")
 endif()
 
 ######################################################################
@@ -111,8 +111,8 @@ find_package_handle_standard_args(MUMPSD DEFAULT_MSG MUMPSD_LIBRARIES MUMPSD_INC
 
 if (MUMPSD_FOUND)
     add_library(MUMPSD INTERFACE)
-    target_link_libraries(MUMPSD INTERFACE "${MUMPSD_LIBRARIES}")
-    target_include_directories(MUMPSD INTERFACE ${MUMPSD_INCLUDE_DIR} ${MUMPS_LIBRARIES})
+    target_link_libraries(MUMPSD INTERFACE "${MUMPSD_LIBRARIES}" ${MUMPS_LIBRARIES})
+    target_include_directories(MUMPSD INTERFACE ${MUMPSD_INCLUDE_DIR})
     target_compile_definitions(MUMPSD INTERFACE -DHAVE_MUMPSD)
     list(APPEND MUMPS_VERSIONS MUMPSD)
 endif()
@@ -134,8 +134,8 @@ find_package_handle_standard_args(MUMPSC DEFAULT_MSG MUMPSC_LIBRARIES MUMPSC_INC
 
 if (MUMPSC_FOUND)
     add_library(MUMPSC INTERFACE)
-    target_link_libraries(MUMPSC INTERFACE "${MUMPSC_LIBRARIES}")
-    target_include_directories(MUMPSC INTERFACE ${MUMPSC_INCLUDE_DIR} ${MUMPS_LIBRARIES})
+    target_link_libraries(MUMPSC INTERFACE "${MUMPSC_LIBRARIES}" ${MUMPS_LIBRARIES})
+    target_include_directories(MUMPSC INTERFACE ${MUMPSC_INCLUDE_DIR})
     target_compile_definitions(MUMPSC INTERFACE -DHAVE_MUMPSC)
     list(APPEND MUMPS_VERSIONS MUMPSC)
 endif()
@@ -157,8 +157,8 @@ find_package_handle_standard_args(MUMPSZ DEFAULT_MSG MUMPSZ_LIBRARIES MUMPSZ_INC
 
 if (MUMPSZ_FOUND)
     add_library(MUMPSZ INTERFACE)
-    target_link_libraries(MUMPSZ INTERFACE "${MUMPSZ_LIBRARIES}")
-    target_include_directories(MUMPSZ INTERFACE ${MUMPSZ_INCLUDE_DIR} ${MUMPS_LIBRARIES})
+    target_link_libraries(MUMPSZ INTERFACE "${MUMPSZ_LIBRARIES}" ${MUMPS_LIBRARIES})
+    target_include_directories(MUMPSZ INTERFACE ${MUMPSZ_INCLUDE_DIR})
     target_compile_definitions(MUMPSZ INTERFACE -DHAVE_MUMPSZ)
     list(APPEND MUMPS_VERSIONS MUMPSZ)
 endif()
