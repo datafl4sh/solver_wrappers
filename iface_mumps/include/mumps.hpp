@@ -146,49 +146,58 @@ mumps_cast_from(From *from)
 
 } // namespace mumps_priv
 
+template<typename MUMPS_STRUC>
+struct mumps_state
+{
+    MUMPS_STRUC         id;
+    size_t              mflops;
+    /* From the MUMPS documentation it is not clear which
+     * should be the lifetime of Aii and Aja */
+    std::vector<int>    Aii, Aja;
+};
+
 template<typename T>
 class mumps_solver
 {
     using MUMPS_STRUC = typename mumps_priv::mumps_types<T>::MUMPS_STRUC_C;
-    
-    MUMPS_STRUC         id;
-    size_t              solver_Mflops;
-    std::vector<int>    Aii, Aja;
-    
-    int                 symmetric_flag;
-    int                 parallel_flag;
+    using mstate = mumps_state<MUMPS_STRUC>;
+    using mstate_uptr = std::unique_ptr<mstate>;
+
+    mstate_uptr state;
+    int         symmetric_flag;
+    int         parallel_flag;
 
 public:
     mumps_solver()
     {
-        id.job = MUMPS_JOB_INIT;
-        id.par = 1;
-        id.sym = 0;
-        id.comm_fortran = FORTRAN_MADNESS_MAGIC;
+        state = std::make_unique<mstate>();
+        state->id.job = MUMPS_JOB_INIT;
+        state->id.par = 1;
+        state->id.sym = 0;
+        state->id.comm_fortran = FORTRAN_MADNESS_MAGIC;
         
-        mumps_priv::call_mumps(&id);
+        mumps_priv::call_mumps(&state->id);
         
-        id.icntl[0]= -1;//6     // Suppress error output
-        id.icntl[1]= -1;//6     // Suppress diagnostic output
-        id.icntl[2]= -1;//6;    // Suppress global output
-        id.icntl[3]= 2;         // Loglevel
+        state->id.icntl[0]= -1;//6;    // Suppress error output
+        state->id.icntl[1]= -1;//6;    // Suppress diagnostic output
+        state->id.icntl[2]= -1;//6;    // Suppress global output
+        state->id.icntl[3]= 2;         // Loglevel
     }
     
     ~mumps_solver()
     {
-        id.job = MUMPS_JOB_TERMINATE;
-        mumps_priv::call_mumps(&id);
+        state->id.job = MUMPS_JOB_TERMINATE;
+        mumps_priv::call_mumps(&state->id);
     }
     
     template<int _Options, typename _Index>
     void
-    factorize(Eigen::SparseMatrix<T, _Options, _Index>& A)
+    factorize(Eigen::SparseMatrix<T, _Options, _Index>& A) const
     {
+        static_assert( !(_Options & Eigen::RowMajor), "CSR not supported yet.");
         if ( A.rows() != A.cols() )
             throw std::invalid_argument("Only square matrices");
 
-        static_assert( !(_Options & Eigen::RowMajor), "CSR not supported yet.");
-        
         A.makeCompressed();
 
         int     N       = A.rows();
@@ -198,88 +207,95 @@ public:
         int *   ja      = A.innerIndexPtr();
         int     is      = A.innerSize();
 
-        Aii.resize( A.nonZeros() );
+        state->Aii.resize( A.nonZeros() );
 
         /* Convert CSC to COO */
-        for (int i = 0; i < is; i++)
-        {
+        for (int i = 0; i < is; i++) {
             int begin = ia[i];
             int end = ia[i+1];
 
             for (size_t j = begin; j < end; j++)
-                Aii[j] = i+1;
+                state->Aii[j] = i+1;
         }
 
-        Aja.resize( A.nonZeros() );
+        state->Aja.resize( A.nonZeros() );
         for (size_t i = 0; i < js; i++)
-            Aja[i] = ja[i] + 1;
+            state->Aja[i] = ja[i] + 1;
         
-        id.a = mumps_priv::mumps_cast_from<T>(data);
-        id.irn = Aii.data();
-        id.jcn = Aja.data();
-        id.n = A.rows();
-        id.nz = A.nonZeros();
+        state->id.a = mumps_priv::mumps_cast_from<T>(data);
+        state->id.irn = state->Aii.data();
+        state->id.jcn = state->Aja.data();
+        state->id.n = A.rows();
+        state->id.nz = A.nonZeros();
 
-        id.job = MUMPS_JOB_ANALYZE_FACTORIZE;
-        mumps_priv::call_mumps(&id);
-        solver_Mflops = (size_t)((id.rinfog[0] + id.rinfog[1])/1e6);
+        state->id.job = MUMPS_JOB_ANALYZE_FACTORIZE;
+        mumps_priv::call_mumps(&state->id);
+        state->mflops = (size_t)((state->id.rinfog[0] + state->id.rinfog[1])/1e6);
+    }
+
+    /* Pseudo-compatibility with Eigen solver interface */
+    template<int _Options, typename _Index>
+    void
+    compute(Eigen::SparseMatrix<T, _Options, _Index>& A) const
+    {
+        factorize(A);
     }
 
     template<int nrhs>
     Eigen::Matrix<T, Eigen::Dynamic, nrhs>
-    solve(Eigen::Matrix<T, Eigen::Dynamic, nrhs>& b)
+    solve(Eigen::Matrix<T, Eigen::Dynamic, nrhs>& b) const
     {
         Eigen::Matrix<T, Eigen::Dynamic, nrhs> ret = b;
         T* x = ret.data();
 
-        id.nrhs = (nrhs > 0) ? nrhs : b.cols();
-        id.rhs = mumps_priv::mumps_cast_from<T>(ret.data());
+        state->id.nrhs = (nrhs > 0) ? nrhs : b.cols();
+        state->id.rhs = mumps_priv::mumps_cast_from<T>(ret.data());
         
-        id.job = MUMPS_JOB_SOLVE;
-        mumps_priv::call_mumps(&id);
+        state->id.job = MUMPS_JOB_SOLVE;
+        mumps_priv::call_mumps(&state->id);
 
         return ret;
     }
     
     void set_output(int oflags)
     {
-        id.icntl[0]= -1;//6     // Suppress error output
-        id.icntl[1]= -1;//6     // Suppress diagnostic output
-        id.icntl[2]= -1;//6;    // Suppress global output
+        state->id.icntl[0]= -1;//6     // Suppress error output
+        state->id.icntl[1]= -1;//6     // Suppress diagnostic output
+        state->id.icntl[2]= -1;//6;    // Suppress global output
         
         if (oflags & MUMPS_OUTPUT_ERROR)
-            id.icntl[0] = 6;
+            state->id.icntl[0] = 6;
         
         if (oflags & MUMPS_OUTPUT_DIAG)
-            id.icntl[1] = 6;
+            state->id.icntl[1] = 6;
         
         if (oflags & MUMPS_OUTPUT_GLOBAL)
-            id.icntl[2] = 6;
+            state->id.icntl[2] = 6;
     }
     
     int symmetric() const
     {
-        return id.sym;
+        return state->id.sym;
     }
     
     void symmetric(int flag)
     {
-        id.sym = flag;
+        state->id.sym = flag;
     }
     
     int parallel() const
     {
-        return id.par;
+        return state->id.par;
     }
     
     void parallel(int flag)
     {
-        id.par = flag;
+        state->id.par = flag;
     }
 
-    size_t get_Mflops()
+    size_t get_Mflops() const
     {
-        return solver_Mflops;
+        return state->mflops;
     }
 };
 
@@ -341,8 +357,8 @@ mumps(Eigen::SparseMatrix<T, _Options, _Index>& A, Eigen::Matrix<T, Eigen::Dynam
     id.n = A.rows();
     id.nz = A.nonZeros();
 
-    id.icntl[0]= -1;//6     // Suppress error output
-    id.icntl[1]= -1;//6     // Suppress diagnostic output
+    id.icntl[0]= -1;//6;    // Suppress error output
+    id.icntl[1]= -1;//6;    // Suppress diagnostic output
     id.icntl[2]= -1;//6;    // Suppress global output
     id.icntl[3]= 2;         // Loglevel
     
@@ -350,6 +366,7 @@ mumps(Eigen::SparseMatrix<T, _Options, _Index>& A, Eigen::Matrix<T, Eigen::Dynam
     T* x = ret.data();
     
     id.nrhs = (nrhs > 0) ? nrhs : b.cols();
+    id.lrhs = b.rows();
     id.rhs = mumps_priv::mumps_cast_from<T>(ret.data());
 
     id.job = MUMPS_JOB_EVERYTHING;
